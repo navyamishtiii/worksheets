@@ -1,0 +1,232 @@
+"""
+Work Sheet 8 — Points, Vectors, Segment and Line (All questions in one file)
+Worksheet source: see provided file. :contentReference[oaicite:1]{index=1}
+"""
+
+import math
+
+# -------------------------
+# Q1: Point class and operations
+# -------------------------
+class Point:
+    def __init__(self, x, y):
+        self.x = float(x)
+        self.y = float(y)
+
+    def __repr__(self):
+        return f"Point({self.x:.4f}, {self.y:.4f})"
+
+    def distance_to(self, other):
+        """Distance between two points"""
+        dx = self.x - other.x
+        dy = self.y - other.y
+        return math.hypot(dx, dy)
+
+    def midpoint(self, other):
+        """Midpoint between self and other"""
+        mx = (self.x + other.x) / 2.0
+        my = (self.y + other.y) / 2.0
+        return Point(mx, my)
+
+    def line_through(self, other):
+        """
+        Return slope m and intercept c for the line y = m*x + c
+        If vertical line, return (None, x_intercept) where x_intercept is the constant x.
+        """
+        dx = other.x - self.x
+        dy = other.y - self.y
+        if abs(dx) < 1e-12:  # vertical line
+            return (None, self.x)
+        m = dy / dx
+        c = self.y - m * self.x
+        return (m, c)
+
+    def reflect_over_line(self, a, b, c):
+        """
+        Reflect this point over line given in ax + by + c = 0 (general form).
+        Returns new Point (x', y').
+        Formula derived from reflection across a line.
+        """
+        # Normalize (a, b) to avoid scaling issues
+        norm = a*a + b*b
+        if abs(norm) < 1e-12:
+            raise ValueError("Invalid line coefficients (a and b cannot both be zero).")
+        x0, y0 = self.x, self.y
+        d = (a*x0 + b*y0 + c) / norm
+        x_ref = x0 - 2*a*d
+        y_ref = y0 - 2*b*d
+        return Point(x_ref, y_ref)
+
+# -------------------------
+# Q2: Vector operations (simple 2D vectors)
+# -------------------------
+class Vector2D:
+    def __init__(self, x, y):
+        self.x = float(x)
+        self.y = float(y)
+
+    def __add__(self, other):
+        return Vector2D(self.x + other.x, self.y + other.y)
+
+    def __repr__(self):
+        return f"Vector2D({self.x:.4f}, {self.y:.4f})"
+
+    def magnitude(self):
+        return math.hypot(self.x, self.y)
+
+    def dot(self, other):
+        return self.x * other.x + self.y * other.y
+
+    def angle_with(self, other):
+        """Return angle in degrees between self and other"""
+        dot = self.dot(other)
+        mag1 = self.magnitude()
+        mag2 = other.magnitude()
+        if mag1 == 0 or mag2 == 0:
+            raise ValueError("Cannot compute angle with zero-length vector.")
+        cos_theta = max(-1.0, min(1.0, dot / (mag1 * mag2)))  # clamp
+        return math.degrees(math.acos(cos_theta))
+
+    def projection_onto(self, other):
+        """Projection of self onto other (returns vector)"""
+        mag2_sq = other.x**2 + other.y**2
+        if mag2_sq == 0:
+            raise ValueError("Cannot project onto zero vector.")
+        scalar = (self.dot(other)) / mag2_sq
+        return Vector2D(scalar * other.x, scalar * other.y)
+
+# -------------------------
+# Q3: Point-to-segment utilities
+# -------------------------
+def segment_length(S, E):
+    return S.distance_to(E)
+
+def closest_point_on_segment(S, E, P):
+    """
+    Returns the closest point on segment SE to point P.
+    Uses projection of vector SP onto SE, clamped to segment.
+    """
+    sx, sy = S.x, S.y
+    ex, ey = E.x, E.y
+    px, py = P.x, P.y
+
+    vx = ex - sx
+    vy = ey - sy
+    wx = px - sx
+    wy = py - sy
+
+    seg_len_sq = vx*vx + vy*vy
+    if seg_len_sq == 0.0:
+        # S and E are the same point
+        return Point(sx, sy)
+
+    t = (wx*vx + wy*vy) / seg_len_sq  # projection factor
+    t_clamped = max(0.0, min(1.0, t))
+
+    closest_x = sx + t_clamped * vx
+    closest_y = sy + t_clamped * vy
+    return Point(closest_x, closest_y)
+
+def distance_point_to_segment(S, E, P):
+    cp = closest_point_on_segment(S, E, P)
+    return cp.distance_to(P)
+
+# -------------------------
+# Q4: Intersection of two lines a1 x + b1 y = c1 and a2 x + b2 y = c2
+# -------------------------
+def intersect_lines(a1, b1, c1, a2, b2, c2):
+    """
+    Returns:
+      - (True, Point(x,y)) if unique intersection exists
+      - (False, "parallel" or "coincident") otherwise
+    """
+    det = a1 * b2 - a2 * b1
+    if abs(det) > 1e-12:
+        x = (c1 * b2 - c2 * b1) / det
+        y = (a1 * c2 - a2 * c1) / det
+        return (True, Point(x, y))
+    else:
+        # Check if lines are coincident: ratios must match
+        # a1/a2 == b1/b2 == c1/c2 (handle zeros carefully)
+        def safe_ratio(u, v):
+            if abs(v) < 1e-12:
+                return None if abs(u) > 1e-12 else 0.0
+            return u / v
+
+        r1 = safe_ratio(a1, a2)
+        r2 = safe_ratio(b1, b2)
+        r3 = safe_ratio(c1, c2)
+
+        # If all defined ratios equal (or are 0/None consistent), treat as coincident
+        if r1 is not None and r2 is not None and r3 is not None:
+            if abs(r1 - r2) < 1e-9 and abs(r2 - r3) < 1e-9:
+                return (False, "coincident")
+        # If all coefficients zero for both lines (degenerate), treat as coincident
+        if abs(a1) < 1e-12 and abs(b1) < 1e-12 and abs(c1) < 1e-12 and \
+           abs(a2) < 1e-12 and abs(b2) < 1e-12 and abs(c2) < 1e-12:
+            return (False, "coincident")
+
+        return (False, "parallel")
+
+# -------------------------
+# Example usage (Test Cases)
+# -------------------------
+if __name__ == "__main__":
+    print("=== Q1: Points ===")
+    A = Point(1, 2)
+    B = Point(4, 6)
+    print("A:", A)
+    print("B:", B)
+    print("Distance A-B:", A.distance_to(B))
+    print("Midpoint A-B:", A.midpoint(B))
+    m, c_or_x = A.line_through(B)
+    if m is None:
+        print("Line through A and B is vertical at x =", c_or_x)
+    else:
+        print(f"Line through A and B: y = {m:.4f}x + {c_or_x:.4f}")
+
+    # Reflection: to reflect a point C over line AB, first convert AB to general form ax+by+c=0
+    # line through A and B has slope m (or vertical). For general form: (y2 - y1)x - (x2 - x1)y + (...) = 0
+    a = B.y - A.y
+    b = -(B.x - A.x)
+    c = -(a*A.x + b*A.y)  # so that a*x + b*y + c = 0 for points on line AB
+    C = Point(3, 1)
+    C_ref = C.reflect_over_line(a, b, c)
+    print("C:", C)
+    print("Reflection of C over line AB:", C_ref)
+
+    print("\n=== Q2: Vectors ===")
+    vA = Vector2D(2, 3)
+    vB = Vector2D(-1, 4)
+    vC = Vector2D(3, -2)
+    R = vA + vB + vC
+    print("A + B + C =", R)
+    print("Magnitudes:", vA.magnitude(), vB.magnitude(), vC.magnitude())
+    print("Dot products: A·B =", vA.dot(vB), ", A·C =", vA.dot(vC), ", B·C =", vB.dot(vC))
+    print("Angles (deg): A-B", vA.angle_with(vB), "A-C", vA.angle_with(vC), "B-C", vB.angle_with(vC))
+    print("Projection of A onto B:", vA.projection_onto(vB))
+
+    print("\n=== Q3: Segment and Point distance ===")
+    S = Point(0, 0)
+    E = Point(5, 0)
+    P = Point(3, 4)
+    print("Segment length SE:", segment_length(S, E))
+    closest = closest_point_on_segment(S, E, P)
+    print("Closest point on SE to P:", closest)
+    print("Distance from P to segment:", distance_point_to_segment(S, E, P))
+
+    print("\n=== Q4: Line Intersections ===")
+    # Example intersecting lines: x + y = 2 and x - y = 0
+    a1, b1, c1 = 1, 1, 2
+    a2, b2, c2 = 1, -1, 0
+    inters = intersect_lines(a1, b1, c1, a2, b2, c2)
+    if inters[0]:
+        print("Intersection at:", inters[1])
+    else:
+        print(inters[1])  # "parallel" or "coincident"
+
+    # Parallel example
+    a1, b1, c1 = 2, 4, 5
+    a2, b2, c2 = 1, 2, 3
+    inters = intersect_lines(a1, b1, c1, a2, b2, c2)
+    print("Parallel/Coincident test result:", inters[1])
