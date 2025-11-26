@@ -1,0 +1,129 @@
+# ============================================
+# Work Sheet 6 
+# ============================================
+
+import pandas as pd
+
+# ---------------------------------------------------------------
+# Q1 – Pandas Basics
+# ---------------------------------------------------------------
+
+# 1.1 Importing Pandas and version
+print("\nQ1.1 Pandas Version:")
+print(pd.__version__)
+
+# 1.2 Creating a DataFrame
+data = {
+    "Name": ["Alice", "Bob", "Charlie"],
+    "Age": [25, 30, 35],
+    "City": ["New York", "Los Angeles", "Chicago"]
+}
+df = pd.DataFrame(data)
+print("\nQ1.2 DataFrame:\n", df)
+
+
+# ---------------------------------------------------------------
+# Q2 – Pandas Series
+# ---------------------------------------------------------------
+
+# 2.1 Creating a Series
+S1 = pd.Series([100, 200, 300, 400, 500])
+print("\nQ2.1 Series S1:\n", S1)
+
+# 2.2 Accessing second and fourth elements
+print("\nQ2.2 2nd Element:", S1[1])
+print("4th Element:", S1[3])
+
+# 2.3 Series Operations
+S2 = pd.Series([10, 20, 30, 40, 50])
+print("\nQ2.3 S1 + S2:\n", S1 + S2)
+
+
+# ---------------------------------------------------------------
+# Q3 – DataFrame Basics
+# ---------------------------------------------------------------
+
+# 3.1 Print Name and City
+print("\nQ3.1 Name & City Columns:\n", df[['Name', 'City']])
+
+# 3.2 Adding Salary Column
+df["Salary"] = [50000, 60000, 70000]
+print("\nQ3.2 Updated DataFrame:\n", df)
+
+# 3.3 Statistics
+print("\nQ3.3 Average Age:", df["Age"].mean())
+print("Total Salary:", df["Salary"].sum())
+
+
+# ---------------------------------------------------------------
+# Q4 – Filtering & Indexing
+# ---------------------------------------------------------------
+
+# 4.1 Filter Age > 28
+filtered = df[df["Age"] > 28]
+print("\nQ4.1 Age > 28:\n", filtered)
+
+# 4.2 Set and Reset Index
+df_indexed = df.set_index("Name")
+print("\nQ4.2 DataFrame with Name as Index:\n", df_indexed)
+
+df_reset = df_indexed.reset_index()
+print("\nReset Index:\n", df_reset)
+
+
+# ---------------------------------------------------------------
+# Q5 – Working with CSV Data
+# ---------------------------------------------------------------
+
+# 5.1 Reading CSV (Simulated as dictionary)
+csv_data = {
+    "Name": ["John", "Jane", "Emily"],
+    "Department": ["Sales", "Marketing", "HR"],
+    "Salary": [50000, 60000, 55000]
+}
+
+df_csv = pd.DataFrame(csv_data)
+print("\nQ5.1 CSV DataFrame:\n", df_csv)
+
+# 5.2 Filter Salary > 55000
+filtered_csv = df_csv[df_csv["Salary"] > 55000]
+print("\nQ5.2 Filter Salary > 55000:\n", filtered_csv[["Name", "Department"]])
+
+
+# ---------------------------------------------------------------
+# Q6 – Grouping and Aggregation
+# ---------------------------------------------------------------
+
+# 6.1 Group by Department: Average Salary
+group_avg = df_csv.groupby("Department")["Salary"].mean()
+print("\nQ6.1 Average Salary by Department:\n", group_avg)
+
+# 6.2 Min & Max Salary per Department
+group_minmax = df_csv.groupby("Department")["Salary"].agg(["min", "max"])
+print("\nQ6.2 Min & Max Salary by Department:\n", group_minmax)
+
+
+# ---------------------------------------------------------------
+# Q7 – Merging DataFrames
+# ---------------------------------------------------------------
+
+df1 = pd.DataFrame({
+    "Name": ["John", "Jane", "Emily"],
+    "Department": ["Sales", "Marketing", "HR"]
+})
+
+df2 = pd.DataFrame({
+    "Name": ["John", "Jane", "Emily"],
+    "Experience (Years)": [5, 7, 3]
+})
+
+merged_df = pd.merge(df1, df2, on="Name")
+print("\nQ7.1 Merged DataFrame:\n", merged_df)
+
+
+# ---------------------------------------------------------------
+# Q8 – Sorting
+# ---------------------------------------------------------------
+
+sorted_df = merged_df.sort_values(by="Experience (Years)", ascending=False)
+print("\nQ8.1 Sorted by Experience (Descending):\n", sorted_df)
